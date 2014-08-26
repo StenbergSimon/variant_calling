@@ -170,7 +170,7 @@ bgzip -d $filename/${filename}_snp_rmf.vcf.gz
 java -Xmx8g -jar ~/bin/SnpSift.jar \
 filter \
 -f $filename/${filename}_snp_rmf.vcf \
-" ( DP >= 20 ) & (AO >= 10 ) & (SAP <= 50) & ( QUAL >= 10 ) " \
+" ( DP >= 10 ) & ( QUAL >= 10 ) " \
 > $filename/${filename}_filtered_snp.vcf
 
 # Preparing:
