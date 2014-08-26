@@ -330,7 +330,7 @@ VALIDATION_STRINGENCY=LENIENT \
 
 # CNV analysis
 
-cnv_pipe_5.pl $filename/bam/${filename}_sorted_RMDUP_gc-corrected.bam \
+cnv_pipe.pl $filename/bam/${filename}_sorted_RMDUP_gc-corrected.bam \
 -r $pacbio_bam \
 -co 0.5 \
 -w 300 \
