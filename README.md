@@ -8,14 +8,25 @@ Dependencies:
 ------------
 
 *Samtools
+
 *Freebayes
+
 *Bamtools
+
 *Deeptools
+
 *Picard
+
 *GATK
+
 *snpEFF
+
 *BWA
+
 *vcftools
+
 *bgzip
+
 *tabix
+
 *CNV_pipe
