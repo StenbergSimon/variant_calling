@@ -38,14 +38,15 @@ while (<file2>){
 #close (file1);
 close (file2);
 
-my $addline = "##FORMAT=<ID=VARW,Number=1,Type=Integer,Description=\"Variance of the observed gap in all reads for given variant\">";
+my $addline = "##FORMAT=<ID=VARW,Number=1,Type=Float,Description=\"Variance of the observed gap in all reads for given variant\">\n";
 
 foreach (@vcfraw){
 	if ($_ =~ m/^#/){
-		if ($_ =~ m/^#CHROM/){
+		if ($_ =~ m/^##FORMAT=<ID=ADR/){
+			#$_ =~ s/\s+/\t/;
+			print $_;
 			print $addline;
-			$_ =~ s/\s+/\t/;
-			$_ = "\n" . $_;
+			next;
 		}
 		print $_;
 	}
