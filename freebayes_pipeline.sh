@@ -190,7 +190,7 @@ tabix -p vcf $filename/${filename}_indels_rmf.vcf.gz
 samtools view $filename/bam/${filename}_sorted_RMDUP_realigned.bam | VARW.pl $filename/${filename}_indels_filtered.vcf > $filename/${filename}_indels_filtered_VARW.vcf
 bgzip $filename/${filename}_indels_filtered_VARW.vcf
 tabix -p vcf $filename/${filename}_indels_filtered_VARW.vcf.gz
-~/bin/bcftools/bcftools filter -o $filename/${filename}_indels_filtered_varw.vcf -i 'VARW==0' $filename/${filename}_indels_filtered_VARW.vcf.gz
+~/bin/bcftools/bcftools filter -o $filename/${filename}_indels_filtered_varw.vcf -i 'FMT/VARW == 0' $filename/${filename}_indels_filtered_VARW.vcf.gz
 
 
 # Count filtered variants
