@@ -367,5 +367,22 @@ $gff \
 mv reports/ cnv_reports/
 mv cnv_reports/ $filename/plots/
 
+mkdir -p $filename/intermediate_files/
+mv $filename/${filename}.intervals $filename/intermediate_files/
+mv $filename/${filename}_3_filtered_snp.vcf $filename/intermediate_files/
+mv $filename/${filename}_3_gcbias-corrected.out $filename/intermediate_files/
+mv $filename/${filename}_3_gcbias.out $filename/intermediate_files/
+mv $filename/${filename}_indels.vcf.gz $filename/intermediate_files/
+mv $filename/${filename}_indels.vcf.gz.tbi $filename/intermediate_files/
+mv $filename/${filename}_indels_filtered.vcf $filename/intermediate_files/
+mv $filename/${filename}_indels_filtered_snpEff.vcf $filename/intermediate_files/
+mv $filename/${filename}_indels_rmf.vcf.gz $filename/intermediate_files/
+mv $filename/${filename}_indels_rmf.vcf.gz.tbi $filename/intermediate_files/
+mv $filename/${filename}_3_indels_snpEff_sift.table $filename/intermediate_files/
+mv $filename/${filename}_snp.vcf.gz $filename/intermediate_files/
+mv $filename/${filename}_snp.vcf.gz.tbi $filename/intermediate_files/
+mv $filename/${filename}_snp_rmf.vcf $filename/intermediate_files/
+mv $filename/${filename}_filtered_snp_snpEFF.vcf $filename/intermediate_files/
+mv $filename/${filename}_indels_snpEff_gatk.table $filename/intermediate_files/
 # Done :)
 
