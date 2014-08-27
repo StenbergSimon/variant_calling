@@ -186,6 +186,13 @@ vcf-isec -c -o $filename/${filename}_indels.vcf.gz $conc_indel | bgzip -c > $fil
 tabix -p vcf $filename/${filename}_indels_rmf.vcf.gz
 ~/bin/bcftools/bcftools filter -o $filename/${filename}_indels_filtered.vcf -i 'FMT/AD/(FMT/RD+FMT/AD)>0.7' $filename/${filename}_indels_rmf.vcf.gz
 
+# Calculate and filter on VARW
+samtools view $filename/bam/${filename}_sorted_RMDUP_realigned.bam | VARW.pl $filename/${filename}_indels_filtered.vcf > $filename/${filename}_indels_filtered_VARW.vcf
+bgzip $filename/${filename}_indels_filtered_VARW.vcf
+tabix -p vcf $filename/${filename}_indels_filtered_VARW.vcf.gz
+~/bin/bcftools/bcftools filter -o $filename/${filename}_indels_filtered_varw.vcf -i 'VARW==0' $filename/${filename}_indels_filtered_VARW.vcf.gz
+
+
 # Count filtered variants
 
 vcftools --vcf $filename/${filename}_filtered_snp.vcf > $filename/logs/snp_count.filtered
@@ -247,7 +254,7 @@ yps128 \
 -no-intron \
 -no-upstream \
 -no-utr \
-$filename/${filename}_indels_filtered.vcf \
+$filename/${filename}_indels_filtered_varw.vcf \
 > $filename/${filename}_indels_filtered_snpEff.vcf
 
 
