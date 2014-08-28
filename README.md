@@ -19,3 +19,9 @@ Dependencies:
 * bgzip
 * tabix
 * CNV_pipe
+
+Known Issues:
+------------
+
+Conversion to table from indel .vcf does not work properly
+
