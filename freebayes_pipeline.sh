@@ -273,7 +273,7 @@ java -jar ~/bin/GenomeAnalysisTK.jar \
 -GF RD \
 -GF AD \
 -GF GQ \
--GF PVAL\
+-GF PVAL \
 -GF RBQ \
 -GF ABQ \
 -GF RDF \
@@ -384,5 +384,9 @@ mv $filename/${filename}_snp.vcf.gz.tbi $filename/intermediate_files/
 mv $filename/${filename}_snp_rmf.vcf $filename/intermediate_files/
 mv $filename/${filename}_filtered_snp_snpEFF.vcf $filename/intermediate_files/
 mv $filename/${filename}_indels_snpEff_gatk.table $filename/intermediate_files/
+mv $filename/cnv_analysis_report.tsv $filename/intermediate_files/
+mv $filename/cnv_analysis_report_merged.tsv $filename/intermediate_files/
+mv $filename/cnv_analysis_report_merged_annotated.tsv $filename/intermediate_files/
+mv $filename/GC_bias.out $filename/intermediate_files/
 # Done :)
 
