@@ -391,6 +391,7 @@ mv $filename/GC_bias.out $filename/intermediate_files/
 mv $filename/${filename}_indels_filtered_VARW.vcf.gz $filename/intermediate_files/
 mv $filename/${filename}_indels_filtered_VARW.vcf.gz.tbi $filename/intermediate_files/
 mv $filename/${filename}_indels_filtered_varw.vcf $filename/intermediate_files/
+mv $filename/${filename}__indels_filtered_snpEff.vcf.idx $filename/intermediate_files/
 
 # Done :)
 
