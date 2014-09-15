@@ -341,7 +341,6 @@ cnv_pipe.pl $filename/bam/${filename}_sorted_RMDUP_gc-corrected.bam \
 -r $pacbio_bam \
 -co 0.5 \
 -w 300 \
--incr 150 \
 -rall \
 -mapq 1 \
 1> $filename/cnv_analysis_report.tsv \
