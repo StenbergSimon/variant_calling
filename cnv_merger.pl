@@ -13,6 +13,13 @@ my @matrix;
 my $increment;
 my $windowsize;
 my @merger;
+my $cutoff = $ARGV[1];
+
+# Test if cutoff exist, else set default
+
+unless(defined($cutoff)){
+	$cutoff = 1000;
+	}
 
 # Read info about increment, and windowsize
 
@@ -89,10 +96,14 @@ foreach my $line (@lib){
 	my $start = $start_sort[0];
 	my $stop = pop(@stop_sort);
 	my $length = $stop - $start;	
-	# Prepare new entries with merged 
-	my $new_entry = $name . "\t" . average(\@log2) . "\t" . average(\@ref_avg) . "\t" .  average(\@sam_avg) . "\t" . $start . "\t" . $stop . "\t" . $length . "\n";
-	push (@table_fixed, $new_entry);
+	# Test if cutoff is met
+	if ($length >= $cutoff){
+		# Prepare new entries with merged 
+		my $new_entry = $name . "\t" . average(\@log2) . "\t" . average(\@ref_avg) . "\t" .  average(\@sam_avg) . "\t" . $start . "\t" . $stop . "\t" . $length . "\n";
+		push (@table_fixed, $new_entry);
+		}
 	}
+
 # Printing
 foreach my $line2 (@table){
         if ($line2 =~ m/^#Chrom\/Contig/){
