@@ -28,7 +28,7 @@ fragmentlength=200
 regenome2bit=/home/simons/iontorrent_vcalling/yps128_pacbio_assembly_final.2bit 
 #
 #Pacbio reference alignment:
-pacbio_bam=/home/simons/iontorrent_vcalling/pacbio_reads_mapped.sorted.bam
+pacbio_bam=/home/simons/iontorrent_vcalling/up_91_3.Founder_003_trimmed.sorted_rmdup_gc-corrected.bam
 #
 #Concordant SNP's for removal
 conc=/home/simons/iontorrent_vcalling/complete_concordance.vcf.gz
