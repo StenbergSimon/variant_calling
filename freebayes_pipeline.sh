@@ -113,16 +113,16 @@ TMP_DIR=$filename/picard_temps \
 # Run BAQ (5)
 samtools calmd -Arb $filename/bam/${filename}_sorted_RMDUP_readgroup.bam $reference > $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam
 
+# Index
+samtools index $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam
+
 # Indel Calling
 samtools mpileup \
 -f yps128_pacbio_assembly_final.fasta \
 -h 100 \
-$filename/bam/${filename}_sorted_RMDUP_realigned.bam \
+$filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam \
 | \
 java -jar /home/simons/bin/VarScan.v2.3.6.jar mpileup2indel --min-reads2 10 --output-vcf 1> $filename/${filename}_indels.vcf
-
-# Index
-samtools index $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam
 
 # SNP calling using FreeBayes (6)
 freebayes \
