@@ -106,28 +106,12 @@ I=$filename/bam/${filename}_sorted_RMDUP_readgroup.bam \
 TMP_DIR=$filename/picard_temps \
 > $filename/logs/rmdup_picard.log
 
-# Create intervals for local realignment (3)
-
-java -Xmx2g -jar ~/bin/GenomeAnalysisTK.jar \
--T RealignerTargetCreator \
--R $reference \
--I $filename/bam/${filename}_sorted_RMDUP_readgroup.bam \
--o $filename/${filename}.intervals \
-> $filename/logs/RealignerTargetCreator.log 2>&1
-
-# Run the Local realignment (4)
-
-java -Xmx4g -jar ~/bin/GenomeAnalysisTK.jar \
--T IndelRealigner \
--R $reference \
--I $filename/bam/${filename}_sorted_RMDUP_readgroup.bam \
--targetIntervals $filename/${filename}.intervals \
--o $filename/bam/${filename}_sorted_RMDUP_realigned.bam \
-> $filename/logs/IndelRealigner.log 2>&1 
-
 # Write realigned to log
-echo "Realignment metrics:" >> $filename/logs/${filename}.log
-samtools flagstat $filename/bam/${filename}_sorted_RMDUP_realigned.bam >> $filename/logs/${filename}.log
+#echo "Realignment metrics:" >> $filename/logs/${filename}.log
+#samtools flagstat $filename/bam/${filename}_sorted_RMDUP_realigned.bam >> $filename/logs/${filename}.log
+
+# Run BAQ (5)
+samtools calmd -Arb $filename/bam/${filename}_sorted_RMDUP_readgroup.bam $reference > $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam
 
 # Indel Calling
 samtools mpileup \
@@ -136,10 +120,6 @@ samtools mpileup \
 $filename/bam/${filename}_sorted_RMDUP_realigned.bam \
 | \
 java -jar /home/simons/bin/VarScan.v2.3.6.jar mpileup2indel --min-reads2 10 --output-vcf 1> $filename/${filename}_indels.vcf
-
-# Run BAQ (5)
-samtools calmd -Arb $filename/bam/${filename}_sorted_RMDUP_realigned.bam $reference > $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam
-
 
 # Index
 samtools index $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam
