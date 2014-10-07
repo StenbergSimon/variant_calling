@@ -167,7 +167,7 @@ tabix -p vcf $filename/${filename}_indels_rmf.vcf.gz
 ~/bin/bcftools/bcftools filter -o $filename/${filename}_indels_filtered.vcf -i 'FMT/AD/(FMT/RD+FMT/AD)>0.7' $filename/${filename}_indels_rmf.vcf.gz
 
 # Calculate and filter on VARW
-samtools view $filename/bam/${filename}_sorted_RMDUP_realigned.bam | VARW.pl $filename/${filename}_indels_filtered.vcf > $filename/${filename}_indels_filtered_VARW.vcf
+samtools view $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam | VARW.pl $filename/${filename}_indels_filtered.vcf > $filename/${filename}_indels_filtered_VARW.vcf
 bgzip $filename/${filename}_indels_filtered_VARW.vcf
 tabix -p vcf $filename/${filename}_indels_filtered_VARW.vcf.gz
 ~/bin/bcftools/bcftools filter -o $filename/${filename}_indels_filtered_varw.vcf -i 'FMT/VARW == 0' $filename/${filename}_indels_filtered_VARW.vcf.gz
