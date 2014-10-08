@@ -129,6 +129,7 @@ freebayes \
 --fasta-reference $reference \
 --ploidy 1 \
 --no-indels \
+--F 0.01 \
 --pooled-continuous \
 $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam \
 1>$filename/${filename}_snp.vcf 2>$filename/logs/freebays.error 
