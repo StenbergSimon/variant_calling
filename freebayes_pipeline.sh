@@ -87,7 +87,7 @@ samtools index $filename/bam/${filename}_sorted_RMDUP.bam
 
 java -Xmx2g -jar ~/bin/AddOrReplaceReadGroups.jar \
 INPUT=$filename/bam/${filename}_sorted_RMDUP.bam \
-OUTPUT=$filename/bam/${filename}_sorted_RMDUP_readgroup.bam \
+OUTPUT=$filename/bam/${filename}_sorted_RMDUP_readgroup_realigned_BAQ.bam \
 TMP_DIR=$filename/picard_temps \
 RGLB=123 \
 RGPL=ION_TORRENT \
@@ -98,7 +98,7 @@ TMP_DIR=$filename/picard_temps \
 
 # Index
 
-samtools index $filename/bam/${filename}_sorted_RMDUP_readgroup.bam
+samtools index $filename/bam/${filename}_sorted_RMDUP_readgroup_realigned_BAQ.bam
 
 # Metrics
 
@@ -112,8 +112,8 @@ TMP_DIR=$filename/picard_temps \
 #echo "Realignment metrics:" >> $filename/logs/${filename}.log
 #samtools flagstat $filename/bam/${filename}_sorted_RMDUP_realigned.bam >> $filename/logs/${filename}.log
 
-# Run BAQ (5)
-samtools calmd -Arb $filename/bam/${filename}_sorted_RMDUP_readgroup.bam $reference > $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam
+# Run BAQ (5) Unecessary when using VARSCAN due to BAQ being ran by default in mpileup
+#samtools calmd -Arb $filename/bam/${filename}_sorted_RMDUP_readgroup.bam $reference > $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam
 
 # Index
 samtools index $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam
