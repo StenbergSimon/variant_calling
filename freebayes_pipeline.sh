@@ -103,7 +103,7 @@ samtools index $filename/bam/${filename}_sorted_RMDUP_readgroup_realigned_BAQ.ba
 # Metrics
 
 java -Xmx4g -jar ~/bin/BamIndexStats.jar \
-I=$filename/bam/${filename}_sorted_RMDUP_readgroup.bam \
+I=$filename/bam/${filename}_sorted_RMDUP_readgroup_realigned_BAQ.bam \
 #VALIDATION_STRINGENCY=LENIENT \
 TMP_DIR=$filename/picard_temps \
 > $filename/logs/rmdup_picard.log
@@ -122,7 +122,7 @@ samtools index $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam
 samtools mpileup \
 -f yps128_pacbio_assembly_final.fasta \
 -h 100 \
-$filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam \
+$filename/bam/${filename}_sorted_RMDUP_readgroup_realigned_BAQ.bam \
 | \
 java -jar /home/simons/bin/VarScan.v2.3.6.jar mpileup2indel --min-reads2 10 --output-vcf 1> $filename/${filename}_indels.vcf
 
@@ -139,7 +139,7 @@ java -jar /home/simons/bin/VarScan.v2.3.6.jar mpileup2indel --min-reads2 10 --ou
 
 # SNP calling using VarScan instead:
 samtools mpileup \
--f yps128_pacbio_assembly_final.fasta $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam \
+-f yps128_pacbio_assembly_final.fasta $filename/bam/${filename}_sorted_RMDUP_readgroup_realigned_BAQ.bam \
 | java -jar ~/bin/VarScan.v2.3.6.jar mpileup2snp --min-coverage 5 --min-var-freq 0.01 --output-vcf > $filename/${filename}_varscan_snp.vcf
 bgzip $filename/${filename}_varscan_snp.vcf
 tabix -p vcf $filename/${filename}_varscan_snp.vcf.gz
@@ -231,7 +231,7 @@ tabix -p vcf $filename/${filename}_indels_rmf.vcf.gz
 ~/bin/bcftools/bcftools filter -o $filename/${filename}_indels_filtered.vcf -i 'FMT/AD/(FMT/RD+FMT/AD)>0.7' $filename/${filename}_indels_rmf.vcf.gz
 
 # Calculate and filter on VARW
-samtools view $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam | VARW.pl $filename/${filename}_indels_filtered.vcf > $filename/${filename}_indels_filtered_VARW.vcf
+samtools view $filename/bam/${filename}_sorted_RMDUP_readgroup_realigned_BAQ.bam | VARW.pl $filename/${filename}_indels_filtered.vcf > $filename/${filename}_indels_filtered_VARW.vcf
 bgzip $filename/${filename}_indels_filtered_VARW.vcf
 tabix -p vcf $filename/${filename}_indels_filtered_VARW.vcf.gz
 ~/bin/bcftools/bcftools filter -o $filename/${filename}_indels_filtered_varw.vcf -i 'FMT/VARW == 0' $filename/${filename}_indels_filtered_VARW.vcf.gz
@@ -382,7 +382,6 @@ VALIDATION_STRINGENCY=LENIENT \
 # CNV analysis
 
 cnv_pipe.pl $filename/bam/${filename}_sorted_RMDUP_gc-corrected.bam \
-#-r $pacbio_bam \
 -co 0.5 \
 -w 300 \
 -rall \
@@ -406,6 +405,8 @@ $gff \
 cnv_score.pl $filename/cnv_analysis_report_merged_annotated.tsv \
 $gff \
 > $filename/cnv_analysis_report_final.tsv
+
+segment_CNV.r reports/
 
 mv reports/ cnv_reports/
 mv cnv_reports/ $filename/plots/
