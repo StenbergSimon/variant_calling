@@ -15,17 +15,17 @@ filenamefull=$1
 ########################################
 #
 #Reference fasta:
-reference=/home/simons/iontorrent_vcalling/yps128_pacbio_assembly_final.fasta
+reference=/home/simons/iontorrent_vcalling/yps128_pacbio_assembly_final_only_ChrI_XVI.fasta
 #Refernce bwa index:
-bwaindex=/home/simons/iontorrent_vcalling/yps128 
+bwaindex=/home/simons/iontorrent_vcalling/yps128_pacbio_assembly_final_only_ChrI_XVI.fasta
 #Reference annotation:
-gff=/home/simons/iontorrent_vcalling/annotation_300514_hgap3_assembly.gff
+gff=/home/simons/iontorrent_vcalling/YPS128_PacBio_S288C_LiftOver_BILS_Annotation.gff
 #
 #Fragment length:
 fragmentlength=200
 #
 #2-bit format Reference genome:
-regenome2bit=/home/simons/iontorrent_vcalling/yps128_pacbio_assembly_final.2bit 
+regenome2bit=/home/simons/iontorrent_vcalling/yps128_pacbio_assembly_final_only_ChrI_XVI.2bit
 #
 #Pacbio reference alignment:
 pacbio_bam=/home/simons/iontorrent_vcalling/up_91_3.Founder_003_trimmed.sorted_rmdup_gc-corrected.bam
@@ -108,13 +108,6 @@ I=$filename/bam/${filename}_sorted_RMDUP_readgroup_realigned_BAQ.bam \
 TMP_DIR=$filename/picard_temps \
 > $filename/logs/rmdup_picard.log
 
-# Write realigned to log
-#echo "Realignment metrics:" >> $filename/logs/${filename}.log
-#samtools flagstat $filename/bam/${filename}_sorted_RMDUP_realigned.bam >> $filename/logs/${filename}.log
-
-# Run BAQ (5) Unecessary when using VARSCAN due to BAQ being ran by default in mpileup
-#samtools calmd -Arb $filename/bam/${filename}_sorted_RMDUP_readgroup.bam $reference > $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam
-
 # Index
 samtools index $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam
 
@@ -126,18 +119,8 @@ $filename/bam/${filename}_sorted_RMDUP_readgroup_realigned_BAQ.bam \
 | \
 java -jar /home/simons/bin/VarScan.v2.3.6.jar mpileup2indel --min-reads2 10 --output-vcf 1> $filename/${filename}_indels.vcf
 
-# SNP calling using FreeBayes (6)
-#freebayes \
-#--fasta-reference $reference \
-#--ploidy 1 \
-#--no-indels \
-#-F 0.01 \
-#--pooled-continuous \
-#$filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam \
-#1>$filename/${filename}_snp.vcf 2>$filename/logs/freebays.error 
 
-
-# SNP calling using VarScan instead:
+# SNP calling using VarScan:
 samtools mpileup \
 -f yps128_pacbio_assembly_final.fasta $filename/bam/${filename}_sorted_RMDUP_readgroup_realigned_BAQ.bam \
 | java -jar ~/bin/VarScan.v2.3.6.jar mpileup2snp --min-coverage 5 --min-var-freq 0.01 --output-vcf > $filename/${filename}_varscan_snp.vcf
@@ -148,12 +131,11 @@ vcf-isec -c -o $filename/${filename}_varscan_snp.vcf.gz $compl > $filename/${fil
 
 java -Xmx8g -jar ~/bin/snpEff.jar \
 -v \
-yps128 \
+yps128_bils \
 -treatAllAsProteinCoding Auto \
 -no-downstream \
 -no-intergenic \
 -no-intron \
--no-upstream \
 -no-utr \
 $filename/${filename}_varscan_snp_rmf.vcf \
 > $filename/${filename}_varscan_snp_rmf_snpeff.vcf
@@ -195,28 +177,6 @@ POS \
 
 mergeVcfTables.pl $filename/${filename}_varscan_snp_rmf_snpeff_gatk.table $filename/${filename}_varscan_snp_rmf_snpeff_sift.table > $filename/${filename}_varscan_snp_rmf_snpeff_final.table
 
-###### END OF VARSCAN CALLING #######
-
-# Count variants 
-
-#vcftools --vcf $filename/${filename}_snp.vcf > $filename/logs/snp_count.raw
-
-### Remove founder variations
-# bgzip and tabix indexing for vcf-isec to work
-# SNPs
-#bgzip $filename/${filename}_snp.vcf
-#tabix -p vcf $filename/${filename}_snp.vcf.gz
-#vcf-isec -c -o $filename/${filename}_snp.vcf.gz $conc | bgzip -c > $filename/${filename}_snp_rmf.vcf.gz
-#bgzip -d $filename/${filename}_snp_rmf.vcf.gz
-
-# Filtering SNPs
-
-#java -Xmx8g -jar ~/bin/SnpSift.jar \
-#filter \
-#-f $filename/${filename}_snp_rmf.vcf \
-#" ( DP >= 10 ) & ( QUAL >= 10 ) " \
-#> $filename/${filename}_filtered_snp.vcf
-
 # Preparing:
 bgzip $filename/${filename}_indels.vcf
 tabix -p vcf $filename/${filename}_indels.vcf.gz
@@ -237,52 +197,6 @@ tabix -p vcf $filename/${filename}_indels_filtered_VARW.vcf.gz
 ~/bin/bcftools/bcftools filter -o $filename/${filename}_indels_filtered_varw.vcf -i 'FMT/VARW == 0' $filename/${filename}_indels_filtered_VARW.vcf.gz
 
 
-# Count filtered variants
-
-#vcftools --vcf $filename/${filename}_filtered_snp.vcf > $filename/logs/snp_count.filtered
-
-# Annotation of snp .vcf file
-
-#java -Xmx8g -jar ~/bin/snpEff.jar \
-#-v \
-#yps128 \
-#-treatAllAsProteinCoding Auto \
-#-no-downstream \
-#-no-intergenic \
-#-no-intron \
-#-no-upstream \
-#-no-utr \
-#$filename/${filename}_filtered_snp.vcf \
-#> $filename/${filename}_filtered_snp_snpEFF.vcf
-
-# Convert snp vcf to table
-
-#java -Xmx8g -jar ~/bin/SnpSift.jar \
-#extractFields \
-#$filename/${filename}_filtered_snp_snpEFF.vcf \
-#CHROM \
-#POS \
-#TYPE \
-#REF \
-#ALT \
-#QUAL \
-#FILTER \
-#DP \
-#AF \
-#AO \
-#RO \
-#QA \
-#QR \
-#DPRA \
-#SRP \
-#SAP \
-#AC \
-#AN \
-#"EFF[*].GENE" \
-#"EFF[*].EFFECT" \
-#"EFF[*].FUNCLASS" \
-#"EFF[*].AA" \
-#> $filename/${filename}_filtered_snp.table 
 
 mv snpEff_genes.txt $filename/logs
 mv snpEff_summary.html $filename/logs
@@ -291,7 +205,7 @@ mv snpEff_summary.html $filename/logs
 
 java -Xmx8g -jar ~/bin/snpEff.jar \
 -v \
-yps128 \
+yps128_bils \
 -treatAllAsProteinCoding Auto \
 -no-downstream \
 -no-intergenic \
@@ -380,36 +294,7 @@ TMP_DIR=$filename/picard_temps \
 VALIDATION_STRINGENCY=LENIENT \
 
 # CNV analysis
-
-cnv_pipe.pl $filename/bam/${filename}_sorted_RMDUP_gc-corrected.bam \
--co 0.5 \
--w 300 \
--rall \
--mapq 1 \
-1> $filename/cnv_analysis_report.tsv \
-2> $filename/logs/cnv_analysis_error.log
-
-# Merge overlapping regions
-
-cnv_merger.pl $filename/cnv_analysis_report.tsv \
-> $filename/cnv_analysis_report_merged.tsv
-
-# Annotate Gene ID's in cnv_report
-
-cnv_annotation.pl $filename/cnv_analysis_report_merged.tsv \
-$gff \
-> $filename/cnv_analysis_report_merged_annotated.tsv
-
-# Score CNV's according to if entire genes are covered by CNV
-
-cnv_score.pl $filename/cnv_analysis_report_merged_annotated.tsv \
-$gff \
-> $filename/cnv_analysis_report_final.tsv
-
-segment_CNV.r reports/
-
-mv reports/ cnv_reports/
-mv cnv_reports/ $filename/plots/
+python ~/git/CNV_pipe/cnv_caller.py -f ${filename}/bam/${filename}_sorted_RMDUP_gc-corrected.bam -m 1 -w 100 -o ${filename}/CNV_analysis -l ~/git/CNV_pipe/chr_only_I_XVI.list
 
 mkdir -p $filename/intermediate_files/
 mv $filename/${filename}.intervals $filename/intermediate_files/
