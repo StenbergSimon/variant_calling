@@ -8,8 +8,8 @@
 
 #Variables:
 filename=${1%.*}
-filenamefull=$1
-filenamefull2=$2
+pair1=$1
+pair2=$2
 
 ########################################
 ##############  SETTINGS  ##############
@@ -47,7 +47,7 @@ touch $filename/logs/${filename}.log
 
 
 # Run aligner pipe to samtools for sam>bam that pipes to sort the bam file (1) (1b) (1c)
-bwa mem -t 16 -M $bwaindex $filenamefull $filenamefull2 | samtools view -bSu - | samtools sort - ${filename}_sorted > $filename/logs/bwa.log 2>&1
+bwa mem -t 16 -M $bwaindex $pair1 $pair2 | samtools view -bSu - | samtools sort - ${filename}_sorted > $filename/logs/bwa.log 2>&1
 mv ${filename}_sorted.bam $filename/bam
 
 
@@ -69,6 +69,10 @@ TMP_DIR=$filename/picard_temps \
 VALIDATION_STRINGENCY=LENIENT \
 > $filename/logs/MarkDuplicates.log 2>&1
 
+# Remove old file 
+rm $filename/bam/${filename}_sorted.bam
+
+# Index 
 samtools index $filename/bam/${filename}_sorted_RMDUP.bam 
 
 # Add read groups
@@ -76,29 +80,42 @@ samtools index $filename/bam/${filename}_sorted_RMDUP.bam
 
 java -Xmx2g -jar ~/bin/AddOrReplaceReadGroups.jar \
 INPUT=$filename/bam/${filename}_sorted_RMDUP.bam \
-OUTPUT=$filename/bam/${filename}_sorted_RMDUP_readgroup_realigned_BAQ.bam \
+OUTPUT=$filename/bam/${filename}_sorted_RMDUP_rg.bam \
 TMP_DIR=$filename/picard_temps \
-RGLB=yps128 \
+RGLB=$filename \
 RGPL=illumina \
-RGPU=yps128 \
-RGSM=yps128 \
+RGPU=$filename \
+RGSM=$filename \
 TMP_DIR=$filename/picard_temps \
 > $filename/logs/AddOrReplaceReadGroups.log 2>&1
 
-# Index
-
-samtools index $filename/bam/${filename}_sorted_RMDUP_readgroup_realigned_BAQ.bam
-
-# Metrics
-
-java -Xmx4g -jar ~/bin/BamIndexStats.jar \
-I=$filename/bam/${filename}_sorted_RMDUP_readgroup_realigned_BAQ.bam \
-#VALIDATION_STRINGENCY=LENIENT \
-TMP_DIR=$filename/picard_temps \
-> $filename/logs/rmdup_picard.log
+# Remove old file
+rm $filename/bam/${filename}_sorted_RMDUP.bam 
 
 # Index
-samtools index $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam
+
+samtools index $filename/bam/${filename}_sorted_RMDUP_rg.bam
+
+# Local realignment 
+
+# Create intervals for local realignment
+
+java -Xmx2g -jar ~/bin/GenomeAnalysisTK.jar \
+-T RealignerTargetCreator \
+-R $reference \
+-I $filename/bam/${filename}_sorted_RMDUP_rg.bam \
+-o $filename/${filename}.intervals \
+> $filename/logs/RealignerTargetCreator.log 2>&1
+
+# Run the Local realignment
+
+java -Xmx4g -jar ~/bin/GenomeAnalysisTK.jar \
+-T IndelRealigner \
+-R $reference \
+-I $filename/bam/${filename}_sorted_RMDUP_rg.bam \
+-targetIntervals $filename/${filename}.intervals \
+-o $filename/bam/${filename}_sorted_RMDUP_rg_realigned.bam \
+> $filename/logs/IndelRealigner.log 2>&1 
 
 # SNP Calling:
 
@@ -108,121 +125,123 @@ freebayes \
 --no-indels \
 -F 0.01 \
 --pooled-continuous \
-$filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam \
+$filename/bam/${filename}_sorted_RMDUP_rg_realigned.bam \
 1>$filename/${filename}_snp.vcf 2>$filename/logs/freebays.error 
 
 
-# Annotating SNPS
+# Annotating SNPs
 java -Xmx8g -jar ~/bin/snpEff.jar \
 -v \
+-noStats
 yps128_bils \
 -treatAllAsProteinCoding Auto \
 -no-downstream \
 -no-intergenic \
 -no-intron \
 -no-utr \
+-o gatk \
 $filename/${filename}_varscan_snp_rmf.vcf \
 > $filename/${filename}_varscan_snp_rmf_snpeff.vcf
 
-java -jar ~/bin/GenomeAnalysisTK.jar \
--R $reference \
--T VariantsToTable \
--V $filename/${filename}_varscan_snp_rmf_snpeff.vcf \
--F CHROM \
--F POS \
--F ID \
--F REF \
--F ALT \
--GF DP \
--GF SDP \
--GF RD \
--GF AD \
--GF FREQ \
--GF GQ \
--GF PVAL \
--GF RBQ \
--GF ABQ \
--GF RDF \
--GF RDR \
--GF ADF \
--GF ADR \
--o $filename/${filename}_varscan_snp_rmf_snpeff_gatk.table
+#java -jar ~/bin/GenomeAnalysisTK.jar \
+#-R $reference \
+#-T VariantsToTable \
+#-V $filename/${filename}_varscan_snp_rmf_snpeff.vcf \
+#-F CHROM \
+#-F POS \
+#-F ID \
+#-F REF \
+#-F ALT \
+#-GF DP \
+#-GF SDP \
+#-GF RD \
+#-GF AD \
+#-GF FREQ \
+#-GF GQ \
+#-GF PVAL \
+#-GF RBQ \
+#-GF ABQ \
+#-GF RDF \
+#-GF RDR \
+#-GF ADF \
+#-GF ADR \
+#-o $filename/${filename}_varscan_snp_rmf_snpeff_gatk.table
 
-java -Xmx8g -jar ~/bin/SnpSift.jar \
-extractFields \
--V $filename/${filename}_varscan_snp_rmf_snpeff.vcf \
-CHROM \
-POS \
-"EFF[*].GENE" \
-"EFF[*].EFFECT" \
-"EFF[*].FUNCLASS" \
-"EFF[*].AA" \
-> $filename/${filename}_varscan_snp_rmf_snpeff_sift.table
-
-mergeVcfTables.pl $filename/${filename}_varscan_snp_rmf_snpeff_gatk.table $filename/${filename}_varscan_snp_rmf_snpeff_sift.table > $filename/${filename}_varscan_snp_rmf_snpeff_final.table
+#java -Xmx8g -jar ~/bin/SnpSift.jar \
+#extractFields \
+#-V $filename/${filename}_varscan_snp_rmf_snpeff.vcf \
+#CHROM \
+#POS \
+#"EFF[*].GENE" \
+#"EFF[*].EFFECT" \
+#"EFF[*].FUNCLASS" \
+#"EFF[*].AA" \
+#> $filename/${filename}_varscan_snp_rmf_snpeff_sift.table
+#
+#mergeVcfTables.pl $filename/${filename}_varscan_snp_rmf_snpeff_gatk.table $filename/${filename}_varscan_snp_rmf_snpeff_sift.table > $filename/${filename}_varscan_snp_rmf_snpeff_final.table
 
 
 # Filtering indels
 
-tabix -p vcf $filename/${filename}_indels_rmf.vcf.gz
-~/bin/bcftools/bcftools filter -o $filename/${filename}_indels_filtered.vcf -i 'FMT/AD/(FMT/RD+FMT/AD)>0.7' $filename/${filename}_indels_rmf.vcf.gz
-
-
-mv snpEff_genes.txt $filename/logs
-mv snpEff_summary.html $filename/logs
+#tabix -p vcf $filename/${filename}_indels_rmf.vcf.gz
+#~/bin/bcftools/bcftools filter -o $filename/${filename}_indels_filtered.vcf -i 'FMT/AD/(FMT/RD+FMT/AD)>0.7' $filename/${filename}_indels_rmf.vcf.gz
+#
+#
+#mv snpEff_genes.txt $filename/logs
+#mv snpEff_summary.html $filename/logs
 
 # Annotation of indel .vcf file
 
-java -Xmx8g -jar ~/bin/snpEff.jar \
--v \
-yps128_bils \
--treatAllAsProteinCoding Auto \
--no-downstream \
--no-intergenic \
--no-intron \
--no-upstream \
--no-utr \
-$filename/${filename}_indels_filtered_varw.vcf \
-> $filename/${filename}_indels_filtered_snpEff.vcf
+#java -Xmx8g -jar ~/bin/snpEff.jar \
+#-v \
+#yps128_bils \
+#-treatAllAsProteinCoding Auto \
+#-no-downstream \
+#-no-intergenic \
+#-no-intron \
+#-no-upstream \
+#-no-utr \
+#$filename/${filename}_indels_filtered_varw.vcf \
+#> $filename/${filename}_indels_filtered_snpEff.vcf
 
 
 # Convert indel vcf to table
-java -jar ~/bin/GenomeAnalysisTK.jar \
--R $reference \
--T VariantsToTable \
--V $filename/${filename}_indels_filtered_snpEff.vcf \
--F CHROM \
--F POS \
--F ID \
--F REF \
--F ALT \
--GF DP \
--GF SDP \
--GF RD \
--GF AD \
--GF GQ \
--GF PVAL \
--GF RBQ \
--GF ABQ \
--GF RDF \
--GF RDR \
--GF ADF \
--GF ADR \
--GF VARW \
--o $filename/${filename}_indels_snpEff_gatk.table
-
-java -Xmx8g -jar ~/bin/SnpSift.jar \
-extractFields \
-$filename/${filename}_indels_filtered_snpEff.vcf \
-CHROM \
-POS \
-"EFF[*].GENE" \
-"EFF[*].EFFECT" \
-"EFF[*].FUNCLASS" \
-"EFF[*].AA" \
-> $filename/${filename}_indels_snpEff_sift.table
-
-mergeVcfTables.pl $filename/${filename}_indels_snpEff_gatk.table $filename/${filename}_indels_snpEff_sift.table $filename/${filename}_indels_snpEff_gatk.table > $filename/${filename}_indels_filtered_snpEff_final.table
+#java -jar ~/bin/GenomeAnalysisTK.jar \
+#-R $reference \
+#-T VariantsToTable \
+#-V $filename/${filename}_indels_filtered_snpEff.vcf \
+#-F CHROM \
+#-F POS \
+#-F ID \
+#-F REF \
+#-F ALT \
+#-GF DP \
+#-GF SDP \
+#-GF RD \
+#-GF AD \
+#-GF GQ \
+#-GF PVAL \
+#-GF RBQ \
+#-GF ABQ \
+#-GF RDF \
+#-GF RDR \
+#-GF ADF \
+#-GF ADR \
+#-GF VARW \
+#-o $filename/${filename}_indels_snpEff_gatk.table
+#
+#java -Xmx8g -jar ~/bin/SnpSift.jar \
+#extractFields \
+#$filename/${filename}_indels_filtered_snpEff.vcf \
+#CHROM \
+#POS \
+#"EFF[*].GENE" \
+#"EFF[*].EFFECT" \
+#"EFF[*].FUNCLASS" \
+#"EFF[*].AA" \
+#> $filename/${filename}_indels_snpEff_sift.table
+#
+#mergeVcfTables.pl $filename/${filename}_indels_snpEff_gatk.table $filename/${filename}_indels_snpEff_sift.table $filename/${filename}_indels_snpEff_gatk.table > $filename/${filename}_indels_filtered_snpEff_final.table
 
 
 mv snpEff_genes.txt snpEff_genes_indel.txt
