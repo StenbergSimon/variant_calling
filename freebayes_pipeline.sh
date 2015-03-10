@@ -2,13 +2,14 @@
 
 # Usage:
 #
-#  ./freebays_pipeline.sh reads.fastq
+#  ./freebays_pipeline.sh reads1.fastq reads2.fastq
 #
 #
 
 #Variables:
 filename=${1%.*}
 filenamefull=$1
+filenamefull2=$2
 
 ########################################
 ##############  SETTINGS  ##############
@@ -22,20 +23,11 @@ bwaindex=/home/simons/iontorrent_vcalling/yps128_pacbio_assembly_final_only_ChrI
 gff=/home/simons/iontorrent_vcalling/YPS128_PacBio_S288C_LiftOver_BILS_Annotation.gff
 #
 #Fragment length:
-fragmentlength=200
+fragmentlength=300
 #
 #2-bit format Reference genome:
 regenome2bit=/home/simons/iontorrent_vcalling/yps128_pacbio_assembly_final_only_ChrI_XVI.2bit
 #
-#Pacbio reference alignment:
-pacbio_bam=/home/simons/iontorrent_vcalling/up_91_3.Founder_003_trimmed.sorted_rmdup_gc-corrected.bam
-#
-#Concordant SNP's for removal
-conc=/home/simons/iontorrent_vcalling/complete_concordance.vcf.gz
-#
-conc_indel=/home/simons/iontorrent_vcalling/complete_concordance_indels.vcf.gz
-#
-compl=complete_concordance_varscan.vcf.gz
 #
 ########################################
 ########################################
@@ -55,7 +47,7 @@ touch $filename/logs/${filename}.log
 
 
 # Run aligner pipe to samtools for sam>bam that pipes to sort the bam file (1) (1b) (1c)
-bwa mem -t 16 -M $bwaindex $filenamefull | samtools view -bSu - | samtools sort - ${filename}_sorted > $filename/logs/bwa.log 2>&1
+bwa mem -t 16 -M $bwaindex $filenamefull $filenamefull2 | samtools view -bSu - | samtools sort - ${filename}_sorted > $filename/logs/bwa.log 2>&1
 mv ${filename}_sorted.bam $filename/bam
 
 
@@ -64,7 +56,6 @@ mv ${filename}_sorted.bam $filename/bam
 samtools index $filename/bam/${filename}_sorted.bam
 
 # Output .bam stats
-echo "Raw alignment metrics:" >> $filename/logs/${filename}.log
 samtools flagstat $filename/bam/${filename}_sorted.bam >> $filename/logs/${filename}.log
 
 # Remove PCR duplicates with Picard (2)
@@ -74,8 +65,6 @@ INPUT=$filename/bam/${filename}_sorted.bam \
 OUTPUT=$filename/bam/${filename}_sorted_RMDUP.bam \
 METRICS_FILE=$filename/logs/${filename}_picard.log \
 AS=true \
-REMOVE_DUPLICATES=true \
-READ_NAME_REGEX='[a-zA-Z0-9]+:[0-9]:([0-9]+):([0-9]+):([0-9]+)' \
 TMP_DIR=$filename/picard_temps \
 VALIDATION_STRINGENCY=LENIENT \
 > $filename/logs/MarkDuplicates.log 2>&1
@@ -89,10 +78,10 @@ java -Xmx2g -jar ~/bin/AddOrReplaceReadGroups.jar \
 INPUT=$filename/bam/${filename}_sorted_RMDUP.bam \
 OUTPUT=$filename/bam/${filename}_sorted_RMDUP_readgroup_realigned_BAQ.bam \
 TMP_DIR=$filename/picard_temps \
-RGLB=123 \
-RGPL=ION_TORRENT \
-RGPU=123 \
-RGSM=123 \
+RGLB=yps128 \
+RGPL=illumina \
+RGPU=yps128 \
+RGSM=yps128 \
 TMP_DIR=$filename/picard_temps \
 > $filename/logs/AddOrReplaceReadGroups.log 2>&1
 
@@ -111,24 +100,19 @@ TMP_DIR=$filename/picard_temps \
 # Index
 samtools index $filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam
 
-# Indel Calling
-samtools mpileup \
--f yps128_pacbio_assembly_final.fasta \
--h 100 \
-$filename/bam/${filename}_sorted_RMDUP_readgroup_realigned_BAQ.bam \
-| \
-java -jar /home/simons/bin/VarScan.v2.3.6.jar mpileup2indel --min-reads2 10 --output-vcf 1> $filename/${filename}_indels.vcf
+# SNP Calling:
+
+freebayes \
+--fasta-reference $reference \
+--ploidy 1 \
+--no-indels \
+-F 0.01 \
+--pooled-continuous \
+$filename/bam/${filename}_sorted_RMDUP_realigned_BAQ.bam \
+1>$filename/${filename}_snp.vcf 2>$filename/logs/freebays.error 
 
 
-# SNP calling using VarScan:
-samtools mpileup \
--f yps128_pacbio_assembly_final.fasta $filename/bam/${filename}_sorted_RMDUP_readgroup_realigned_BAQ.bam \
-| java -jar ~/bin/VarScan.v2.3.6.jar mpileup2snp --min-coverage 5 --min-var-freq 0.01 --output-vcf > $filename/${filename}_varscan_snp.vcf
-bgzip $filename/${filename}_varscan_snp.vcf
-tabix -p vcf $filename/${filename}_varscan_snp.vcf.gz
-
-vcf-isec -c -o $filename/${filename}_varscan_snp.vcf.gz $compl > $filename/${filename}_varscan_snp_rmf.vcf
-
+# Annotating SNPS
 java -Xmx8g -jar ~/bin/snpEff.jar \
 -v \
 yps128_bils \
@@ -177,25 +161,11 @@ POS \
 
 mergeVcfTables.pl $filename/${filename}_varscan_snp_rmf_snpeff_gatk.table $filename/${filename}_varscan_snp_rmf_snpeff_sift.table > $filename/${filename}_varscan_snp_rmf_snpeff_final.table
 
-# Preparing:
-bgzip $filename/${filename}_indels.vcf
-tabix -p vcf $filename/${filename}_indels.vcf.gz
-
-# Remove founder variants from indels
-
-vcf-isec -c -o $filename/${filename}_indels.vcf.gz $conc_indel | bgzip -c > $filename/${filename}_indels_rmf.vcf.gz
 
 # Filtering indels
 
 tabix -p vcf $filename/${filename}_indels_rmf.vcf.gz
 ~/bin/bcftools/bcftools filter -o $filename/${filename}_indels_filtered.vcf -i 'FMT/AD/(FMT/RD+FMT/AD)>0.7' $filename/${filename}_indels_rmf.vcf.gz
-
-# Calculate and filter on VARW
-samtools view $filename/bam/${filename}_sorted_RMDUP_readgroup_realigned_BAQ.bam | VARW.pl $filename/${filename}_indels_filtered.vcf > $filename/${filename}_indels_filtered_VARW.vcf
-bgzip $filename/${filename}_indels_filtered_VARW.vcf
-tabix -p vcf $filename/${filename}_indels_filtered_VARW.vcf.gz
-~/bin/bcftools/bcftools filter -o $filename/${filename}_indels_filtered_varw.vcf -i 'FMT/VARW == 0' $filename/${filename}_indels_filtered_VARW.vcf.gz
-
 
 
 mv snpEff_genes.txt $filename/logs
