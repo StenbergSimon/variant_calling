@@ -127,7 +127,7 @@ $filename/${filename}.vcf \
 java -Xmx8g -jar ~/bin/SnpSift.jar \
 filter \
 'QUAL > 10' \
-$filename/${filename}_snpeff.vcf \
+-f $filename/${filename}_snpeff.vcf \
 > $filename/${filename}_filtered_snpeff.vcf
 
 echo $filename/${filename}_filtered_snpeff.vcf >> vcf_list.txt
