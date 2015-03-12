@@ -69,6 +69,11 @@ TMP_DIR=$filename/picard_temps \
 VALIDATION_STRINGENCY=LENIENT \
 > $filename/logs/MarkDuplicates.log 2>&1
 
+# Echo files
+
+echo $(pwd)/$filename/bam/${filename}_sorted_RMDUP.bam >> bam_list.txt
+echo scp $(pwd)/$filename/bam/${filename}_sorted_RMDUP.bam >> bam_scp_list.txt
+
 # Remove old file 
 #rm $filename/bam/${filename}_sorted.bam
 
@@ -130,8 +135,8 @@ filter \
 -f $filename/${filename}_snpeff.vcf \
 > $filename/${filename}_filtered_snpeff.vcf
 
-echo $filename/${filename}_filtered_snpeff.vcf >> vcf_list.txt
-echo scp $filename/${filename}_filtered_snpeff.vcf simon@genmac33.gen.gu.se:~/ >> scp_vcf_list.txt
+echo $(pwd)/$filename/${filename}_filtered_snpeff.vcf >> vcf_list.txt
+echo scp $(pwd)/$filename/${filename}_filtered_snpeff.vcf simon@genmac33.gen.gu.se:~/ >> scp_vcf_list.txt
 
 #Convert to table
 java -Xmx8g -jar ~/bin/SnpSift.jar \
@@ -161,8 +166,8 @@ AN \
 "EFF[*].AA" \
 > $filename/${filename}_filtered_variants.table 
 
-echo $filename/${filename}_filtered_variants.table >> table_list.txt
-echo scp $filename/${filename}_filtered_variants.table simon@genmac33.gen.gu.se:~/ >> scp_table_list.txt
+echo $(pwd)/$filename/${filename}_filtered_variants.table >> table_list.txt
+echo scp $(pwd)/$filename/${filename}_filtered_variants.table simon@genmac33.gen.gu.se:~/ >> scp_table_list.txt
 
 # Collect GC bias plot
 
