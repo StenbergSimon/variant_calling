@@ -70,7 +70,7 @@ VALIDATION_STRINGENCY=LENIENT \
 > $filename/logs/MarkDuplicates.log 2>&1
 
 # Remove old file 
-rm $filename/bam/${filename}_sorted.bam
+#rm $filename/bam/${filename}_sorted.bam
 
 # Index 
 samtools index $filename/bam/${filename}_sorted_RMDUP.bam 
@@ -89,7 +89,7 @@ TMP_DIR=$filename/picard_temps \
 > $filename/logs/AddOrReplaceReadGroups.log 2>&1
 
 # Remove old file
-rm $filename/bam/${filename}_sorted_RMDUP.bam 
+#rm $filename/bam/${filename}_sorted_RMDUP.bam 
 
 # Index
 
@@ -168,7 +168,7 @@ echo scp $filename/${filename}_filtered_variants.table simon@genmac33.gen.gu.se:
 
 java -Xmx2g -jar ~/bin/CollectGcBiasMetrics.jar \
 REFERENCE_SEQUENCE=$reference \
-INPUT= $filename/bam/${filename}_sorted_RMDUP_rg.bam \
+INPUT= $filename/bam/${filename}_sorted_RMDUP.bam \
 OUTPUT=$filename/${filename}_gcbias.out \
 ASSUME_SORTED=true \
 CHART_OUTPUT=$filename/plots/${filename}_gc_bias_plot.pdf \
@@ -178,7 +178,7 @@ VALIDATION_STRINGENCY=LENIENT
 # Correct GC bias
 
 automatic_gc_normalization.pl \
-$filename/bam/${filename}_sorted_RMDUP_rg.bam \
+$filename/bam/${filename}_sorted_RMDUP.bam \
 $fragmentlength \
 $regenome2bit \
 1>$filename/logs/${filename}_gc_bias_correction.log \
@@ -188,7 +188,7 @@ $regenome2bit \
 
 java -Xmx2g -jar ~/bin/CollectGcBiasMetrics.jar \
 REFERENCE_SEQUENCE=$reference \
-INPUT=$filename/bam/${filename}_sorted_RMDUP_rg_gc-corrected.bam \
+INPUT=$filename/bam/${filename}_sorted_RMDUP_gc-corrected.bam \
 OUTPUT=$filename/${filename}_gcbias-corrected.out \
 ASSUME_SORTED=true \
 CHART_OUTPUT=$filename/plots/${filename}_gc_bias-corrected_plot.pdf \
@@ -196,7 +196,7 @@ TMP_DIR=$filename/picard_temps \
 VALIDATION_STRINGENCY=LENIENT
 
 # CNV analysis
-python ~/git/CNV_pipe/cnv_caller.py -f $filename/bam/${filename}_sorted_RMDUP_rg_gc-corrected.bam -m 1 -w 100 -o ${filename}/CNV_analysis -l ~/git/CNV_pipe/chr_only_I_XVI.list
+python ~/git/CNV_pipe/cnv_caller.py -f $filename/bam/${filename}_sorted_RMDUP_gc-corrected.bam -m 1 -w 100 -o ${filename}/CNV_analysis -l ~/git/CNV_pipe/chr_only_I_XVI.list
 
 #mkdir -p $filename/intermediate_files/
 #mv $filename/${filename}.intervals $filename/intermediate_files/
