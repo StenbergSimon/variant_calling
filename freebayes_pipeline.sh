@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#/usr/bin/env bash
 
 # Usage:
 #
@@ -102,7 +102,7 @@ freebayes \
 --fasta-reference $reference \
 --ploidy 1 \
 -F 0.1 \
--no-complex \
+--no-complex \
 --pooled-continuous \
 --stdin \
 1>$filename/${filename}.vcf 2>$filename/logs/freebays.error 
@@ -111,14 +111,14 @@ freebayes \
 # Annotating SNPs
 java -Xmx8g -jar ~/bin/snpEff.jar \
 -v \
--noStats
 yps128_bils \
+-noStats \
+-o gatk \
 -treatAllAsProteinCoding Auto \
 -no-downstream \
 -no-intergenic \
 -no-intron \
 -no-utr \
--o gatk \
 $filename/${filename}.vcf \
 > $filename/${filename}_snpeff.vcf
 
@@ -173,7 +173,7 @@ OUTPUT=$filename/${filename}_gcbias.out \
 ASSUME_SORTED=true \
 CHART_OUTPUT=$filename/plots/${filename}_gc_bias_plot.pdf \
 TMP_DIR=$filename/picard_temps \
-VALIDATION_STRINGENCY=LENIENT \
+VALIDATION_STRINGENCY=LENIENT
 
 # Correct GC bias
 
@@ -193,7 +193,7 @@ OUTPUT=$filename/${filename}_gcbias-corrected.out \
 ASSUME_SORTED=true \
 CHART_OUTPUT=$filename/plots/${filename}_gc_bias-corrected_plot.pdf \
 TMP_DIR=$filename/picard_temps \
-VALIDATION_STRINGENCY=LENIENT \
+VALIDATION_STRINGENCY=LENIENT
 
 # CNV analysis
 python ~/git/CNV_pipe/cnv_caller.py -f $filename/bam/${filename}_sorted_RMDUP_rg_gc-corrected.bam -m 1 -w 100 -o ${filename}/CNV_analysis -l ~/git/CNV_pipe/chr_only_I_XVI.list
