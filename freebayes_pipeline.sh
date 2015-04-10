@@ -59,6 +59,11 @@ samtools index $filename/bam/${filename}_sorted.bam
 
 python ~/git/scripts/plot_cov.py -i $filename/bam/${filename}_sorted.bam -o $filename/plots/coverage_plot.pdf
 
+# Insert size metrics
+
+java -jar ~/bin/picard-tools-1.109/CollectInsertSizeMetrics.jar HISTOGRAM_FILE=$filename/plots/insert_size.pdf I=$filename/bam/${filename}_sorted.bam O=$filename/logs/insert.picard
+
+
 # Output .bam stats
 samtools flagstat $filename/bam/${filename}_sorted.bam >> $filename/logs/${filename}.log
 
