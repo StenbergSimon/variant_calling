@@ -55,6 +55,10 @@ mv ${filename}_sorted.bam $filename/bam
 
 samtools index $filename/bam/${filename}_sorted.bam
 
+# plot coverage
+
+python ~/git/scripts/plot_cov.py -i $filename/bam/${filename}_sorted.bam -o $filename/plots/coverage_plot.pdf
+
 # Output .bam stats
 samtools flagstat $filename/bam/${filename}_sorted.bam >> $filename/logs/${filename}.log
 
