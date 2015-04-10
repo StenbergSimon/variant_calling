@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#/usr/bin/env bash
 
 # Usage:
 #
@@ -73,6 +73,11 @@ TMP_DIR=$filename/picard_temps \
 VALIDATION_STRINGENCY=LENIENT \
 > $filename/logs/MarkDuplicates.log 2>&1
 
+# Echo files
+
+echo $(pwd)/$filename/bam/${filename}_sorted_RMDUP.bam >> bam_list.txt
+echo scp $(pwd)/$filename/bam/${filename}_sorted_RMDUP.bam >> bam_scp_list.txt
+
 # Remove old file 
 #rm $filename/bam/${filename}_sorted.bam
 
@@ -106,7 +111,7 @@ freebayes \
 --fasta-reference $reference \
 --ploidy 1 \
 -F 0.1 \
--no-complex \
+--no-complex \
 --pooled-continuous \
 --stdin \
 1>$filename/${filename}.vcf 2>$filename/logs/freebays.error 
@@ -115,14 +120,14 @@ freebayes \
 # Annotating SNPs
 java -Xmx8g -jar ~/bin/snpEff.jar \
 -v \
--noStats
 yps128_bils \
+-noStats \
+-o gatk \
 -treatAllAsProteinCoding Auto \
 -no-downstream \
 -no-intergenic \
 -no-intron \
 -no-utr \
--o gatk \
 $filename/${filename}.vcf \
 > $filename/${filename}_snpeff.vcf
 
@@ -131,11 +136,11 @@ $filename/${filename}.vcf \
 java -Xmx8g -jar ~/bin/SnpSift.jar \
 filter \
 'QUAL > 10' \
-$filename/${filename}_snpeff.vcf \
+-f $filename/${filename}_snpeff.vcf \
 > $filename/${filename}_filtered_snpeff.vcf
 
-echo $filename/${filename}_filtered_snpeff.vcf >> vcf_list.txt
-echo scp $filename/${filename}_filtered_snpeff.vcf simon@genmac33.gen.gu.se:~/ >> scp_vcf_list.txt
+echo $(pwd)/$filename/${filename}_filtered_snpeff.vcf >> vcf_list.txt
+echo scp $(pwd)/$filename/${filename}_filtered_snpeff.vcf simon@genmac33.gen.gu.se:~/ >> scp_vcf_list.txt
 
 #Convert to table
 java -Xmx8g -jar ~/bin/SnpSift.jar \
@@ -165,8 +170,8 @@ AN \
 "EFF[*].AA" \
 > $filename/${filename}_filtered_variants.table 
 
-echo $filename/${filename}_filtered_variants.table >> table_list.txt
-echo scp $filename/${filename}_filtered_variants.table simon@genmac33.gen.gu.se:~/ >> scp_table_list.txt
+echo $(pwd)/$filename/${filename}_filtered_variants.table >> table_list.txt
+echo scp $(pwd)/$filename/${filename}_filtered_variants.table simon@genmac33.gen.gu.se:~/ >> scp_table_list.txt
 
 # Collect GC bias plot
 
@@ -177,7 +182,7 @@ OUTPUT=$filename/${filename}_gcbias.out \
 ASSUME_SORTED=true \
 CHART_OUTPUT=$filename/plots/${filename}_gc_bias_plot.pdf \
 TMP_DIR=$filename/picard_temps \
-VALIDATION_STRINGENCY=LENIENT \
+VALIDATION_STRINGENCY=LENIENT
 
 # Correct GC bias
 
@@ -197,7 +202,7 @@ OUTPUT=$filename/${filename}_gcbias-corrected.out \
 ASSUME_SORTED=true \
 CHART_OUTPUT=$filename/plots/${filename}_gc_bias-corrected_plot.pdf \
 TMP_DIR=$filename/picard_temps \
-VALIDATION_STRINGENCY=LENIENT \
+VALIDATION_STRINGENCY=LENIENT
 
 # CNV analysis
 python ~/git/CNV_pipe/cnv_caller.py -f $filename/bam/${filename}_sorted_RMDUP_gc-corrected.bam -m 1 -w 100 -o ${filename}/CNV_analysis -l ~/git/CNV_pipe/chr_only_I_XVI.list
